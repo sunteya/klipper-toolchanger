@@ -66,6 +66,7 @@ class ProbeSessionHelper:
                                                  minval=0.)
         self.samples_retries = config.getint('samples_tolerance_retries', 0,
                                              minval=0)
+        self.drop_first_result = config.getboolean('drop_first_result', False)
         # Session state
         self.multi_probe_pending = False
         self.results = []
@@ -144,9 +145,15 @@ class ProbeSessionHelper:
         retries = 0
         positions = []
         sample_count = params['samples']
+        first_probe = True
         while len(positions) < sample_count:
             # Probe position
             pos = self._probe(params['probe_speed'])
+            if self.drop_first_result and first_probe:
+                first_probe = False
+                liftpos = [None, None, pos[2] + params['sample_retract_dist']]
+                toolhead.manual_move( liftpos, params['lift_speed'])
+                continue
             positions.append(pos)
             # Check samples tolerance
             z_positions = [p[2] for p in positions]
